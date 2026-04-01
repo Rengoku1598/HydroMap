@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=hydromap
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=secret_postgres_pass
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+
+  web:
+    build: .
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://admin:secret_postgres_pass@db:5432/hydromap
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - MQTT_HOST=mosquitto
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    build: .
+    command: celery -A hydromap_django worker -l info
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+      - mosquitto
+
+volumes:
+  postgres_data:

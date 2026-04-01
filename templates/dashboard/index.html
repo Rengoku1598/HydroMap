@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex h-screen w-screen overflow-hidden">
+    <!-- Sidebar: Live Alerts & Sensors -->
+    <aside class="w-80 sidebar-blur border-r border-slate-700/50 flex flex-col z-20">
+        <div class="p-6 border-b border-slate-700/50">
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                HYDROMAP v1.0
+            </h1>
+            <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest">Hududiy suv monitoringi</p>
+        </div>
+
+        <!-- Alert Feed (HTMX auto-refresh every 5s) -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 sidebar" 
+             hx-get="/api/v1/alerts/feed/" 
+             hx-trigger="every 5s">
+            <div class="text-center p-8 opacity-50">
+                <div class="animate-pulse flex flex-col items-center">
+                    <div class="h-2 w-24 bg-slate-700 rounded mb-4"></div>
+                    <p class="text-xs">Voqealar lentasi yuklanmoqda...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-700/50 bg-slate-900/50">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+                <span>Tizim holati:</span>
+                <span class="flex items-center text-emerald-400">
+                    <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-ping"></span>
+                    Onlayn
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-slate-700/50 bg-slate-900/30">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">Rang tushunchasi</h3>
+            <div class="space-y-4">
+                <div class="flex items-start gap-4 grow">
+                    <div class="mt-1 w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">Me'yor (Safe)</p>
+                        <p class="text-[10px] text-slate-500 leading-tight">Suv miqdori va holati xavfsiz darajada.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4 grow">
+                    <div class="mt-1 w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">Ogohlantirish (Warning)</p>
+                        <p class="text-[10px] text-slate-500 leading-tight">Chegaraviy qiymatlar, diqqat talab etiladi.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4 grow">
+                    <div class="mt-1 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse"></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">Kritik (Critical)</p>
+                        <p class="text-[10px] text-slate-500 leading-tight">Xavfli holat yoki ruxsatsiz suv olish.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content: Map -->
+    <main class="flex-1 relative z-10">
+        <div id="map" class="h-full w-full bg-[#0f172a]"></div>
+        
+        <!-- Floating Info Overlay (Alpine.js ready) -->
+        <div class="absolute bottom-10 right-10 z-30 p-4 bg-slate-900/80 border border-slate-700 rounded-xl sidebar-blur shadow-2xl">
+            <div class="flex gap-6">
+                <div class="text-center">
+                    <span class="block text-xs uppercase text-slate-500 font-bold mb-1">Faol datchiklar</span>
+                    <span class="text-2xl font-mono text-blue-400 tracking-tighter" id="sensor-count">0</span>
+                </div>
+                <div class="text-center">
+                    <span class="block text-xs uppercase text-slate-500 font-bold mb-1">Umumiy sarf</span>
+                    <span class="text-2xl font-mono text-emerald-400 tracking-tighter" id="total-flow">0.0 m³/s</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Load Map Engine -->
+<script src="/static/js/app.js"></script>
+{% endblock %}

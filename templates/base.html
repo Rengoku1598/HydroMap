@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydromap: Hududiy monitoring tizimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        /* Dark mode map tiles filter */
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .sidebar-blur { backdrop-filter: blur(8px); background-color: rgba(30, 41, 59, 0.7); }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-slate-100 font-sans overflow-hidden h-screen w-screen">
+    {% block content %}{% endblock %}
+</body>
+</html>
