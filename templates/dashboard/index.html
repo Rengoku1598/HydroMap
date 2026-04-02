@@ -1,86 +1,255 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="flex h-screen w-screen overflow-hidden">
-    <!-- Sidebar: Live Alerts & Sensors -->
-    <aside class="w-80 sidebar-blur border-r border-slate-700/50 flex flex-col z-20">
-        <div class="p-6 border-b border-slate-700/50">
-            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                HYDROMAP v1.0
-            </h1>
-            <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest">Hududiy suv monitoringi</p>
+<style>
+    /* Neon glow for lakes and reservoirs */
+    .neon-waterbody {
+        transition: all 0.3s ease;
+    }
+
+    /* Flowing animation for rivers */
+    .flowing-water {
+        stroke-dasharray: 6, 6;
+        animation: flowAnimation 2s linear infinite;
+    }
+
+    @keyframes flowAnimation {
+        to {
+            stroke-dashoffset: -16;
+        }
+    }
+</style>
+
+<div class="h-screen w-screen overflow-hidden bg-[#060a15] text-slate-100 font-sans relative" 
+     x-data="{ sidebarOpen: false, bottomOpen: false }">
+    
+    <!-- MAP BACKGROUND -->
+    <main id="map" class="h-full w-full grayscale-[0.2] contrast-[1.1] brightness-[0.85] z-0"></main>
+
+    <!-- TOP-LEFT: BRANDING & MAIN CONTROLS -->
+    <div class="fixed top-10 left-10 z-[100] flex flex-col items-start gap-6">
+        <!-- Logo Placeholder -->
+        <div class="flex items-center gap-4 mb-2">
+            <!-- Empty space for logo to be provided by user later -->
+            <img src="/static/img/logo.png" alt="Hydromap Logo" class="h-14 w-14 object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+            <div class="text-left">
+                <span class="block text-2xl font-black text-white leading-none tracking-tighter uppercase">Hydromap</span>
+                <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest opacity-60 italic">{{ t.national_system }}</span>
+            </div>
         </div>
 
-        <!-- Alert Feed (HTMX auto-refresh every 5s) -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 sidebar" 
-             hx-get="/api/v1/alerts/feed/" 
-             hx-trigger="every 5s">
-            <div class="text-center p-8 opacity-50">
-                <div class="animate-pulse flex flex-col items-center">
-                    <div class="h-2 w-24 bg-slate-700 rounded mb-4"></div>
-                    <p class="text-xs">Voqealar lentasi yuklanmoqda...</p>
+        <!-- Language & Map Toggle (uz, Ru, ing) -->
+        <div class="flex items-center bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-2xl p-1 gap-1">
+            <button onclick="window.location.search = '?lang=uz'" class="px-4 py-2 text-[11px] font-black uppercase rounded-xl transition-all {% if current_lang == 'uz' %}bg-blue-600 text-white shadow-lg{% else %}text-slate-500 hover:text-white{% endif %}">uz</button>
+            <button onclick="window.location.search = '?lang=ru'" class="px-4 py-2 text-[11px] font-black uppercase rounded-xl transition-all {% if current_lang == 'ru' %}bg-blue-600 text-white shadow-lg{% else %}text-slate-500 hover:text-white{% endif %}">Ru</button>
+            <button onclick="window.location.search = '?lang=en'" class="px-4 py-2 text-[11px] font-black uppercase rounded-xl transition-all {% if current_lang == 'en' %}bg-blue-600 text-white shadow-lg{% else %}text-slate-500 hover:text-white{% endif %}">ing</button>
+        </div>
+
+        <!-- Registry Toggle (All Deposits) -->
+        <div class="flex items-center group cursor-pointer" @click="sidebarOpen = !sidebarOpen">
+            <div :class="sidebarOpen ? 'bg-blue-600 shadow-blue-glow scale-110' : 'bg-slate-900/80'"
+                 class="h-16 w-16 rounded-[2rem] border border-white/10 flex items-center justify-center transition-all duration-300">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOWER-LEFT: CRITICAL STATUS (Rectangular Panel) -->
+    <div class="fixed bottom-10 left-10 z-[100] flex items-center group cursor-pointer bg-red-950/40 backdrop-blur-xl border border-red-500/20 rounded-xl p-1 transition-all duration-300 hover:bg-red-900/40" 
+         @click="bottomOpen = !bottomOpen">
+        <div :class="bottomOpen ? 'bg-red-600 shadow-red-glow' : 'bg-red-600/30'"
+             class="h-14 w-14 rounded-lg flex items-center justify-center transition-all duration-300 shadow-lg border border-white/5">
+            <svg class="w-7 h-7 text-white group-hover:animate-shake" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        </div>
+    </div>
+
+    <!-- TOP-RIGHT: NAVIGATION & RELIEF -->
+    <div class="fixed top-10 right-10 z-[100] flex flex-col items-end gap-10" x-data="{ mapType: 'geo' }">
+        <!-- Relief Types (Horizontal Stack) -->
+        <div class="flex items-center group text-right">
+            <div class="flex flex-row p-1 bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-2xl gap-1">
+                <button id="map-sat" @click="mapType = 'sat'" 
+                        :class="mapType === 'sat' ? 'bg-blue-600 shadow-blue-glow' : 'bg-white/5 hover:bg-white/10'"
+                        class="h-10 w-16 rounded-xl transition-all border border-white/5 flex items-center justify-center text-[8px] font-black uppercase">Sat</button>
+                <button id="map-geo" @click="mapType = 'geo'" 
+                        :class="mapType === 'geo' ? 'bg-blue-600 shadow-blue-glow' : 'bg-white/5 hover:bg-white/10'"
+                        class="h-10 w-16 rounded-xl transition-all border border-white/5 flex items-center justify-center text-[8px] font-black uppercase">Geo</button>
+                <button id="map-topo" @click="mapType = 'topo'" 
+                        :class="mapType === 'topo' ? 'bg-blue-600 shadow-blue-glow' : 'bg-white/5 hover:bg-white/10'"
+                        class="h-10 w-16 rounded-xl transition-all border border-white/5 flex items-center justify-center text-[8px] font-black uppercase">Rel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!--  AQUAAI CHATBOT — BOTTOM RIGHT FLOATING    -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="aquaai-root" class="fixed bottom-10 right-10 z-[200] flex flex-col items-end gap-3">
+
+        <!-- Chat Panel -->
+        <div id="aquaai-panel"
+             class="hidden w-[360px] h-[520px] flex-col bg-slate-950/95 backdrop-blur-3xl border border-cyan-500/20 rounded-[1.75rem] shadow-[0_0_60px_rgba(6,182,212,0.15)] overflow-hidden">
+
+            <!-- Header -->
+            <div class="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-cyan-950/80 to-blue-950/80 border-b border-cyan-500/15 shrink-0">
+                <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-900/40">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[13px] font-black text-white tracking-tight">AquaAI</div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Online</span>
+                    </div>
+                </div>
+                <!-- Quick action chips -->
+                <div class="flex gap-1">
+                    <button onclick="aquaaiQuick('theft')"
+                            class="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-[9px] font-black text-red-300 hover:bg-red-500/30 transition-all">
+                        O'g'irlik
+                    </button>
+                    <button onclick="aquaaiQuick('forecast')"
+                            class="px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30 text-[9px] font-black text-blue-300 hover:bg-blue-500/30 transition-all">
+                        24h
+                    </button>
+                </div>
+                <button onclick="toggleAquaAI()"
+                        class="h-7 w-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="aquaai-messages"
+                 class="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth"
+                 style="scrollbar-width: thin; scrollbar-color: rgba(6,182,212,0.2) transparent;">
+
+                <!-- Welcome message (static) -->
+                <div class="flex items-start gap-2.5">
+                    <div class="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex-shrink-0 flex items-center justify-center mt-0.5">
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 bg-slate-800/60 border border-white/8 rounded-2xl rounded-tl-sm px-4 py-3 text-[12px] text-slate-200 leading-relaxed">
+                        {{ t.welcome }}
+                        <br><br>
+                        <span class="text-[10px] text-slate-500">💡 Masalan: «suv o'g'irlanishi», «24 soat bashorat», «kritik holatlar», «ob-havo»</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Typing indicator (hidden by default) -->
+            <div id="aquaai-typing" class="hidden px-4 pb-2">
+                <div class="flex items-center gap-2 text-[10px] text-cyan-400/60">
+                    <div class="flex gap-1">
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400/50 animate-bounce" style="animation-delay:0ms"></span>
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400/50 animate-bounce" style="animation-delay:150ms"></span>
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400/50 animate-bounce" style="animation-delay:300ms"></span>
+                    </div>
+                    <span>AquaAI tahlil qilmoqda...</span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="px-4 pb-4 pt-2 border-t border-white/5 shrink-0">
+                <form id="aquaai-form" class="flex items-center gap-2" onsubmit="return false;">
+                    <input id="aquaai-input" type="text"
+                           placeholder="{{ t.ai_placeholder }}"
+                           autocomplete="off"
+                           class="flex-1 bg-slate-800/80 border border-white/10 rounded-xl px-4 py-2.5 text-[12px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:bg-slate-800 transition-all">
+                    <button id="aquaai-send" type="submit"
+                            onclick="aquaaiSend()"
+                            class="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center hover:shadow-lg hover:shadow-cyan-900/40 transition-all active:scale-95">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </form>
+
+                <!-- Quick action suggestions -->
+                <div class="flex flex-wrap gap-1.5 mt-2.5">
+                    <button onclick="aquaaiQuick('theft')"
+                            class="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-white/8 text-[9px] text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30 transition-all">
+                        🕵️ Suv o'g'irlanishi
+                    </button>
+                    <button onclick="aquaaiQuick('forecast')"
+                            class="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-white/8 text-[9px] text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30 transition-all">
+                        📈 24h bashorat
+                    </button>
+                    <button onclick="aquaaiQuick('weather')"
+                            class="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-white/8 text-[9px] text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30 transition-all">
+                        🌤️ Ob-havo
+                    </button>
+                    <button onclick="aquaaiQuick('critical')"
+                            class="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-white/8 text-[9px] text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30 transition-all">
+                        🚨 Kritik
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="p-4 border-t border-slate-700/50 bg-slate-900/50">
-            <div class="flex items-center justify-between text-xs text-slate-400">
-                <span>Tizim holati:</span>
-                <span class="flex items-center text-emerald-400">
-                    <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-ping"></span>
-                    Onlayn
-                </span>
-            </div>
-        </div>
+        <!-- Floating Trigger Button -->
+        <button id="aquaai-btn" onclick="toggleAquaAI()"
+                class="group relative h-16 w-16 rounded-[1.75rem] bg-gradient-to-br from-cyan-600 to-blue-700
+                       shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)]
+                       hover:scale-110 transition-all duration-300 flex items-center justify-center border border-cyan-400/30">
+            <!-- AI icon -->
+            <svg id="aquaai-icon-chat" class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <!-- Pulse ring -->
+            <span class="absolute inset-0 rounded-[1.75rem] animate-ping bg-cyan-400/20 pointer-events-none"></span>
+            <!-- Tooltip -->
+            <span class="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap
+                         bg-slate-900/90 border border-white/10 text-[10px] font-black text-cyan-300
+                         px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none
+                         tracking-widest uppercase">
+                AquaAI
+            </span>
+        </button>
+    </div>
 
-        <div class="p-6 border-t border-slate-700/50 bg-slate-900/30">
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">Rang tushunchasi</h3>
-            <div class="space-y-4">
-                <div class="flex items-start gap-4 grow">
-                    <div class="mt-1 w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-200">Me'yor (Safe)</p>
-                        <p class="text-[10px] text-slate-500 leading-tight">Suv miqdori va holati xavfsiz darajada.</p>
-                    </div>
-                </div>
-                <div class="flex items-start gap-4 grow">
-                    <div class="mt-1 w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-200">Ogohlantirish (Warning)</p>
-                        <p class="text-[10px] text-slate-500 leading-tight">Chegaraviy qiymatlar, diqqat talab etiladi.</p>
-                    </div>
-                </div>
-                <div class="flex items-start gap-4 grow">
-                    <div class="mt-1 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse"></div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-200">Kritik (Critical)</p>
-                        <p class="text-[10px] text-slate-500 leading-tight">Xavfli holat yoki ruxsatsiz suv olish.</p>
-                    </div>
-                </div>
-            </div>
+    <!-- WINDOW PANELS (MODULARS) -->
+    <!-- Registry (Thick Window) -->
+    <aside x-show="sidebarOpen" @click.away="sidebarOpen = false"
+           x-transition:enter="transition duration-500 transform" x-transition:enter-start="-translate-x-full opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
+           class="fixed left-28 top-64 w-[20rem] h-[25rem] z-[150] bg-slate-950/80 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl flex flex-col p-8 overflow-hidden">
+        <h2 class="text-xl font-black text-white uppercase tracking-tighter mb-8 italic outline-text">{{ t.all_deposits }}</h2>
+        <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4" hx-get="{% url 'dashboard:registry' %}?lang={{ current_lang }}" hx-trigger="load">
+             <div class="flex justify-center p-10 opacity-20"><div class="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full"></div></div>
         </div>
     </aside>
 
-    <!-- Main Content: Map -->
-    <main class="flex-1 relative z-10">
-        <div id="map" class="h-full w-full bg-[#0f172a]"></div>
-        
-        <!-- Floating Info Overlay (Alpine.js ready) -->
-        <div class="absolute bottom-10 right-10 z-30 p-4 bg-slate-900/80 border border-slate-700 rounded-xl sidebar-blur shadow-2xl">
-            <div class="flex gap-6">
-                <div class="text-center">
-                    <span class="block text-xs uppercase text-slate-500 font-bold mb-1">Faol datchiklar</span>
-                    <span class="text-2xl font-mono text-blue-400 tracking-tighter" id="sensor-count">0</span>
-                </div>
-                <div class="text-center">
-                    <span class="block text-xs uppercase text-slate-500 font-bold mb-1">Umumiy sarf</span>
-                    <span class="text-2xl font-mono text-emerald-400 tracking-tighter" id="total-flow">0.0 m³/s</span>
-                </div>
-            </div>
+    <!-- Alerts (Thin Window - Now also popover-like) -->
+    <div x-show="bottomOpen" @click.away="bottomOpen = false"
+         x-transition:enter="transition duration-500 transform" x-transition:enter-start="-translate-x-full opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
+         class="fixed left-28 bottom-10 w-[40rem] h-auto max-h-[22rem] z-[150] bg-red-950/70 backdrop-blur-3xl border border-red-500/30 rounded-xl shadow-2xl p-4 flex flex-col">
+        <div class="flex items-center justify-between mb-6 shrink-0">
+            <span class="text-[10px] font-black uppercase text-red-400 tracking-[0.3em]">{{ t.critical_places }}</span>
+            <button @click="bottomOpen = false" class="h-8 w-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-200 shadow-lg border border-red-500/10">✕</button>
         </div>
-    </main>
+        <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2" hx-get="{% url 'dashboard:critical_feed' %}?layout=vertical&lang={{ current_lang }}" hx-trigger="load">
+             <div class="animate-pulse text-[9px] text-slate-500 uppercase font-black tracking-widest">{{ t.syncing }}</div>
+        </div>
+    </div>
+
 </div>
 
-<!-- Load Map Engine -->
+<!-- Details Modal -->
+<div id="details-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-slate-950/80 backdrop-blur-xl p-6">
+    <div @click.away="closeDetails()" class="w-full max-w-xl bg-slate-900/90 border border-white/10 rounded-[4rem] shadow-2xl p-12 relative animate-scale-up">
+        <div id="details-content"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script src="/static/js/app.js"></script>
 {% endblock %}

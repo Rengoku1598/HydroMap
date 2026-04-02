@@ -1,0 +1,180 @@
+{% extends "admin/base.html" %}
+{% load static admin_analytics %}
+
+{% block title %}{{ title }} | Hydromap Admin{% endblock %}
+
+{% block branding %}
+<div class="flex items-center gap-3" style="display: flex; align-items: center; gap: 12px;">
+    <img src="{% static 'img/logo.png' %}" alt="Hydromap Logo" style="width: 36px; height: 36px; object-fit: contain;">
+    <h1 id="site-name" style="margin: 0; font-weight: 800; cursor: pointer;" onclick="window.location='/'">
+        HYDROMAP <span style="font-weight: 300; opacity: 0.5;">Digital</span>
+    </h1>
+</div>
+{% endblock %}
+
+{% block content_title %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2); box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);">
+                <img src="{% static 'img/logo.png' %}" alt="Icon" style="width: 28px; height: 28px; object-fit: contain; display: block; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));">
+            </div>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 900; background: linear-gradient(135deg, #ffffff, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1.5px; text-transform: uppercase;">
+                Site Administration
+            </h1>
+        </div>
+        <button onclick="document.getElementById('analytics-panel').style.display = document.getElementById('analytics-panel').style.display === 'none' ? 'block' : 'none'" class="button" style="background: linear-gradient(135deg, #8b5cf6, #3b82f6) !important; box-shadow: 0 0 15px rgba(139, 92, 246, 0.5) !important;">
+            <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            ANALYTICS & REPORTS
+        </button>
+    </div>
+    
+    <div id="analytics-panel" style="display: none; padding: 20px; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 16px; margin-bottom: 30px; animation: fadeIn 0.3s ease-out;">
+        {% render_admin_analytics %}
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const mainGrid = document.querySelector('.dashboard #content-main');
+            if (mainGrid) {
+                const placeholders = `
+                    <div class="module custom-module" data-sort="4">
+                        <h2>4. TIZIM HOLATI</h2>
+                        <div style="padding: 20px 15px; text-align: center; color: #475569; font-style: italic; font-size: 11px;">
+                            <svg style="width: 24px; height: 24px; margin: 0 auto 5px; color: #334155;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Tizim barqaror ishlamoqda. <br>Yangi ma'lumotlar kutilmoqda...
+                        </div>
+                    </div>
+                    <div class="module custom-module" data-sort="5">
+                        <h2>5. HISOBOTLAR ARXIVI</h2>
+                        <div style="padding: 20px 15px; text-align: center; color: #475569; font-style: italic; font-size: 11px;">
+                            <svg style="width: 24px; height: 24px; margin: 0 auto 5px; color: #334155;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Arxiv kutilmoqda. <br>Joriy haftada yozuvlar yo'q.
+                        </div>
+                    </div>
+                `;
+                mainGrid.insertAdjacentHTML('beforeend', placeholders);
+                
+                // Physically sort DOM nodes for Masonry layout
+                const modules = Array.from(mainGrid.querySelectorAll('.module'));
+                modules.forEach(mod => {
+                    // Use textContent to grab all text inside the module to avoid HTML tag target misses
+                    const text = mod.textContent.toUpperCase();
+                    
+                    if (text.includes('REGIONAL SUV MONITORING')) {
+                        mod.style.display = 'none'; // Hide robustly
+                        mod.remove(); // Force remove from DOM so it doesn't mess up masonry grid gaps
+                    }
+                    else if (text.includes('1. DATCHIKLAR')) mod.setAttribute('data-sort', '1');
+                    else if (text.includes('2. TELEMETRIYA')) mod.setAttribute('data-sort', '2');
+                    else if (text.includes('3. OGOHLANTIRISH')) mod.setAttribute('data-sort', '3');
+                    else if (text.includes('4. TIZIM')) mod.setAttribute('data-sort', '4');
+                    else if (text.includes('5. HISOBOTLAR')) mod.setAttribute('data-sort', '99');
+                    else if (text.includes('AUTHENTICATION')) mod.setAttribute('data-sort', '90');
+                    else if (text.includes('CELERY RESULTS')) mod.setAttribute('data-sort', '91');
+                    else if (text.includes('PERIODIC TASKS')) mod.setAttribute('data-sort', '92');
+                    else mod.setAttribute('data-sort', '10');
+                });
+
+                // Filter out any removed modules and sort them
+                const activeModules = Array.from(mainGrid.querySelectorAll('.module'));
+                activeModules.sort((a, b) => parseInt(a.getAttribute('data-sort') || 10) - parseInt(b.getAttribute('data-sort') || 10));
+                activeModules.forEach(mod => mainGrid.appendChild(mod));
+            }
+        });
+    </script>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Global Dark Theme Overrides for Django Admin */
+    body { font-family: 'Inter', sans-serif !important; background-color: #060a15 !important; color: #cbd5e1 !important; }
+    #header { background: #0f172a !important; padding: 10px 30px !important; border-bottom: 1px solid #1e293b; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+    #branding h1 { color: #f8fafc !important; font-size: 18px !important; }
+    
+    /* Typography & Links */
+    a:link, a:visited { color: #38bdf8 !important; transition: all 0.2s ease; }
+    a:hover { color: #7dd3fc !important; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); }
+    
+    /* Layout & Modules */
+    #content { background: transparent !important; padding: 20px 25px !important; }
+    
+    /* Dashboard: Responsive Grid Layout with Media Queries */
+    .dashboard #content { display: block !important; width: 100% !important; }
+    .dashboard #content-main { 
+        width: 100% !important; 
+        max-width: none !important;
+        float: none !important;
+        display: grid !important; 
+        grid-template-columns: 1fr !important; /* Mobile: 1 column */
+        gap: 20px !important; 
+        align-items: start !important;
+    }
+    
+    @media (min-width: 768px) {
+        .dashboard #content-main {
+            grid-template-columns: repeat(2, 1fr) !important; /* Tablet: 2 columns */
+        }
+    }
+    
+    @media (min-width: 1200px) {
+        .dashboard #content-main {
+            grid-template-columns: repeat(3, 1fr) !important; /* Desktop: 3 columns */
+        }
+    }
+    
+    .dashboard .module {
+        break-inside: avoid; /* Prevent card splitting across columns */
+        margin-bottom: 20px !important; 
+    }
+    .dashboard #content-related { display: none !important; }
+    
+    .module { 
+        background: rgba(30, 41, 59, 0.4) !important; 
+        border: 1px solid rgba(148, 163, 184, 0.1) !important; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important; 
+        border-radius: 12px !important; 
+        overflow: hidden; 
+        backdrop-filter: blur(10px);
+        display: block !important;
+    }
+    .module h2 { 
+        background: rgba(15, 23, 42, 0.4) !important; 
+        color: #38bdf8 !important; 
+        font-weight: 800 !important;
+        font-size: 11px !important;
+        text-transform: uppercase;
+        letter-spacing: 1px !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important; 
+        padding: 12px 15px !important;
+        margin: 0 !important;
+    }
+    
+    /* Tables & Lists - Scaled Down */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: rgba(15, 23, 42, 0.6) !important; color: #94a3b8 !important; border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important; padding: 8px 12px !important; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
+    tr, td, th { border-bottom: 1px solid rgba(148, 163, 184, 0.05) !important; color: #e2e8f0 !important; background: transparent !important; padding: 10px 12px !important; font-size: 11px; }
+    tbody tr:hover, tbody tr:hover td, tbody tr:hover th { background-color: rgba(56, 189, 248, 0.05) !important; }
+    
+    /* Action Links within tables (Add/Change) */
+    a.addlink, a.changelink {
+        background: rgba(16, 185, 129, 0.1) !important; color: #34d399 !important; padding: 4px 10px !important; border-radius: 12px !important; font-weight: 600 !important; font-size: 10px !important; text-decoration: none !important; border: 1px solid rgba(52, 211, 153, 0.2) !important; transition: all 0.2s !important; display: inline-flex; align-items: center; gap: 4px; background-image: none !important;
+    }
+    a.changelink { background: rgba(56, 189, 248, 0.1) !important; color: #38bdf8 !important; border-color: rgba(56, 189, 248, 0.2) !important; }
+    a.addlink:hover { background: rgba(16, 185, 129, 0.2) !important; transform: scale(1.05); }
+    a.changelink:hover { background: rgba(56, 189, 248, 0.2) !important; transform: scale(1.05); }
+    td a.addlink, td a.changelink { padding-left: 10px !important; }
+
+    /* Forms & Inputs */
+    input[type=text], input[type=password], select, textarea {
+        background: rgba(15, 23, 42, 0.6) !important; color: #f8fafc !important; border: 1px solid #475569 !important; border-radius: 8px !important; padding: 8px 12px !important;font-size: 12px !important;
+    }
+    
+    /* Main Buttons */
+    .button, input[type=submit] { 
+        background: linear-gradient(135deg, #2563eb, #3b82f6) !important; color: #ffffff !important; border: none !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 11px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3) !important; cursor: pointer;
+    }
+    
+    div.breadcrumbs { display: none !important; } /* Hide breadcrumbs on standard admin to save space */
+</style>
+{% endblock %}

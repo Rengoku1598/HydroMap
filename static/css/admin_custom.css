@@ -1,0 +1,136 @@
+/* Hydromap Custom Premium Styles */
+
+:root {
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.5);
+    --sidebar-bg: rgba(10, 15, 29, 0.8);
+}
+
+body {
+    background-color: #060a15 !important;
+    scrollbar-width: none;
+}
+
+.sidebar-blur {
+    backdrop-filter: blur(20px) saturate(180%);
+    background-color: var(--sidebar-bg);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.animate-scale-up {
+    animation: scaleUp 0.3s ease-out;
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Map Dark Filter Enhancement */
+.leaflet-container {
+    background: #060a15 !important;
+}
+.leaflet-tile-pane {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%) grayscale(20%);
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.custom-scrollbar::-webkit-scrollbar:horizontal {
+    height: 4px;
+}
+
+[x-cloak] { display: none !important; }
+
+.no-wrap {
+    white-space: nowrap;
+}
+
+/* Specific button glow for the new UI */
+.shadow-blue-glow {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+}
+
+.shadow-red-glow {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Animations for new triggers */
+@keyframes shake-warning {
+    0%, 100% { transform: scale(1); }
+    10%, 20% { transform: rotate(-3deg) scale(1.1); }
+    30%, 50%, 70%, 90% { transform: rotate(3deg) scale(1.1); }
+    40%, 60%, 80% { transform: rotate(-3deg) scale(1.1); }
+}
+
+.group:hover .group-hover\:animate-shake {
+    animation: shake-warning 0.8s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Zoom Controls Position & Style */
+.leaflet-right .leaflet-control-zoom {
+    margin-bottom: 220px !important; /* Raising ~5-6 cm */
+    margin-right: 30px !important;
+    border: none !important;
+}
+
+.leaflet-control-zoom a {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(8px);
+    color: white !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 12px !important;
+    margin-bottom: 4px !important;
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    transition: all 0.3s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background-color: #2563eb !important;
+    transform: scale(1.1);
+}

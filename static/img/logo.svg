@@ -1,0 +1,13 @@
+<svg width="60" height="60" viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="blue_grad" x1="50" y1="0" x2="50" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+  <!-- Base Drop Shape -->
+  <path d="M50 0C50 0 0 45 0 85C0 109.853 22.3858 130 50 130C77.6142 130 100 109.853 100 85C100 45 50 0 50 0Z" fill="url(#blue_grad)"/>
+  <!-- Stylized Spiral/Wrap Accents -->
+  <path opacity="0.3" d="M50 0C30 30 10 60 10 85C10 100 20 115 50 120C30 110 20 90 20 70C20 40 50 0 50 0Z" fill="white"/>
+  <path opacity="0.2" d="M100 85C100 109.853 77.6142 130 50 130C65 115 75 90 75 70C75 50 60 20 50 0C80 30 100 60 100 85Z" fill="black"/>
+</svg>

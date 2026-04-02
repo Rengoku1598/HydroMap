@@ -1,10 +1,6 @@
 from rest_framework import viewsets
-from sensors.models import Sensor, WaterDeposit
-from telemetry.models import Hydrometry
-from alerts.models import Alert
-from sensors.serializers import SensorSerializer, WaterDepositSerializer
-from telemetry.serializers import HydrometrySerializer
-from alerts.serializers import AlertSerializer
+from core.models import Sensor, WaterDeposit, Hydrometry, Alert
+from core.serializers import SensorSerializer, WaterDepositSerializer, HydrometrySerializer, AlertSerializer
 from django.shortcuts import render
 
 class SensorViewSet(viewsets.ModelViewSet):

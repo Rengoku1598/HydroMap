@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     
     # Custom Apps
+    'core',
     'sensors',
     'telemetry',
     'analytics',
